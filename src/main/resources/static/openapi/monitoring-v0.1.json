@@ -1,0 +1,894 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Green AI Monitoring — contrato interno",
+    "version": "0.1.0",
+    "description": "Grupo A. Sin adaptador real de Prometheus en este incremento. Grupo B pendiente de instrumentación PMV1. Las rutas externas del Gateway no son estas rutas."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "paths": {
+    "/api/v1/metrics/catalog": {
+      "get": {
+        "operationId": "getMetricCatalog",
+        "summary": "getMetricCatalog",
+        "description": "Sin parámetros extra o repetidos; sin PromQL. Fixtures solo con perfil explícito. Respuesta máxima 5 MiB.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Resultado. Ausencia de series es no_data, no error.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "minItems": 5,
+                  "maxItems": 5,
+                  "items": {
+                    "$ref": "#/components/schemas/Metric"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetro inválido",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Límite excedido",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Respuesta de fuente inválida",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin fuente o fuente ocupada",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout de 5 s",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/metrics/current": {
+      "get": {
+        "operationId": "getCurrentMetrics",
+        "summary": "getCurrentMetrics",
+        "description": "Sin parámetros extra o repetidos; sin PromQL. Fixtures solo con perfil explícito. Respuesta máxima 5 MiB.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/metric"
+          },
+          {
+            "$ref": "#/components/parameters/resourceType"
+          },
+          {
+            "$ref": "#/components/parameters/cluster"
+          },
+          {
+            "$ref": "#/components/parameters/resourceId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado. Ausencia de series es no_data, no error.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetro inválido",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Límite excedido",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Respuesta de fuente inválida",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin fuente o fuente ocupada",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout de 5 s",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/metrics/history": {
+      "get": {
+        "operationId": "getMetricHistory",
+        "summary": "getMetricHistory",
+        "description": "Sin parámetros extra o repetidos; sin PromQL. Fixtures solo con perfil explícito. Respuesta máxima 5 MiB.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/metric"
+          },
+          {
+            "$ref": "#/components/parameters/resourceType"
+          },
+          {
+            "$ref": "#/components/parameters/cluster"
+          },
+          {
+            "$ref": "#/components/parameters/resourceId"
+          },
+          {
+            "$ref": "#/components/parameters/start"
+          },
+          {
+            "$ref": "#/components/parameters/end"
+          },
+          {
+            "$ref": "#/components/parameters/stepSeconds"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado. Ausencia de series es no_data, no error.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parámetro inválido",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Límite excedido",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Respuesta de fuente inválida",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin fuente o fuente ocupada",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Timeout de 5 s",
+            "headers": {
+              "X-Request-Id": {
+                "description": "UUID generado por Monitoring para esta solicitud.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Metric": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "group",
+          "resourceType",
+          "unit",
+          "aggregation",
+          "windowSeconds",
+          "description",
+          "denominator",
+          "seriesLabels"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "node.cpu.utilization",
+              "node.memory.used",
+              "node.network.receive",
+              "node.network.transmit",
+              "node.filesystem.used"
+            ]
+          },
+          "group": {
+            "const": "A"
+          },
+          "resourceType": {
+            "const": "node"
+          },
+          "unit": {
+            "enum": [
+              "ratio",
+              "bytes",
+              "bytes/s"
+            ]
+          },
+          "aggregation": {
+            "enum": [
+              "instant",
+              "rate",
+              "mean_non_idle"
+            ]
+          },
+          "windowSeconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "enum": [
+              60,
+              null
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "denominator": {
+            "type": "string"
+          },
+          "seriesLabels": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "device",
+                "mountpoint",
+                "fstype"
+              ]
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      "Resource": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "cluster",
+          "id"
+        ],
+        "properties": {
+          "type": {
+            "const": "node"
+          },
+          "cluster": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "Sample": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "timestamp",
+          "value",
+          "quality"
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$"
+          },
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "quality": {
+            "enum": [
+              "valid",
+              "missing",
+              "non_finite"
+            ]
+          }
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "quality": {
+                "const": "valid"
+              },
+              "value": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "properties": {
+              "quality": {
+                "enum": [
+                  "missing",
+                  "non_finite"
+                ]
+              },
+              "value": {
+                "type": "null"
+              }
+            }
+          }
+        ]
+      },
+      "Series": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resource",
+          "labels",
+          "source",
+          "origin",
+          "samples"
+        ],
+        "properties": {
+          "resource": {
+            "$ref": "#/components/schemas/Resource"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "source": {
+            "enum": [
+              "fixture",
+              "prometheus"
+            ]
+          },
+          "origin": {
+            "enum": [
+              "observed",
+              "simulated",
+              "estimated",
+              "unknown"
+            ]
+          },
+          "samples": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5761,
+            "items": {
+              "$ref": "#/components/schemas/Sample"
+            }
+          }
+        }
+      },
+      "MetricsResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metric",
+          "unit",
+          "aggregation",
+          "windowSeconds",
+          "start",
+          "end",
+          "stepSeconds",
+          "dataStatus",
+          "series",
+          "warnings"
+        ],
+        "properties": {
+          "metric": {
+            "enum": [
+              "node.cpu.utilization",
+              "node.memory.used",
+              "node.network.receive",
+              "node.network.transmit",
+              "node.filesystem.used"
+            ]
+          },
+          "unit": {
+            "enum": [
+              "ratio",
+              "bytes",
+              "bytes/s"
+            ]
+          },
+          "aggregation": {
+            "enum": [
+              "instant",
+              "rate",
+              "mean_non_idle"
+            ]
+          },
+          "windowSeconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "enum": [
+              60,
+              null
+            ]
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "Z$"
+          },
+          "stepSeconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 15,
+            "maximum": 3600
+          },
+          "dataStatus": {
+            "enum": [
+              "complete",
+              "partial",
+              "no_data"
+            ]
+          },
+          "series": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/Series"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "instance",
+          "code",
+          "requestId"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri-reference"
+          },
+          "code": {
+            "enum": [
+              "INVALID_QUERY",
+              "QUERY_LIMIT_EXCEEDED",
+              "UPSTREAM_INVALID_RESPONSE",
+              "METRICS_SOURCE_UNAVAILABLE",
+              "METRICS_SOURCE_TIMEOUT",
+              "HTTP_ERROR",
+              "INTERNAL_ERROR"
+            ]
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "parameters": {
+      "metric": {
+        "name": "metric",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "enum": [
+            "node.cpu.utilization",
+            "node.memory.used",
+            "node.network.receive",
+            "node.network.transmit",
+            "node.filesystem.used"
+          ]
+        }
+      },
+      "resourceType": {
+        "name": "resourceType",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "node"
+          ],
+          "default": "node"
+        },
+        "description": "Tipo explícito. Futuras versiones incorporarán pod/service sin reinterpretar resourceId."
+      },
+      "cluster": {
+        "name": "cluster",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        }
+      },
+      "resourceId": {
+        "name": "resourceId",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        }
+      },
+      "start": {
+        "name": "start",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "description": "RFC3339, zona conocida, segundos enteros; inicio inclusivo."
+      },
+      "end": {
+        "name": "end",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "description": "RFC3339, segundos enteros; start < end <= now; máximo 24 h, inclusivo."
+      },
+      "stepSeconds": {
+        "name": "stepSeconds",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 15,
+          "maximum": 3600,
+          "default": 15
+        },
+        "description": "Rejilla de evaluación, no agregación de buckets."
+      }
+    }
+  }
+}
