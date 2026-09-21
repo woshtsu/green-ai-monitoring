@@ -3,7 +3,7 @@
   "info": {
     "title": "Green AI Monitoring — contrato interno",
     "version": "0.1.0",
-    "description": "Grupo A. Sin adaptador real de Prometheus en este incremento. Grupo B pendiente de instrumentación PMV1. Las rutas externas del Gateway no son estas rutas."
+    "description": "Grupo A. Prometheus con URL explícita o fixture con perfil explícito. Grupo B pendiente de instrumentación PMV1. Las rutas externas del Gateway no son estas rutas."
   },
   "servers": [
     {

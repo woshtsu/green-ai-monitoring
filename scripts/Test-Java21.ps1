@@ -29,6 +29,9 @@ fi
 exit "$result"
 '@
 
+# Git on Windows may check this file out with CRLF; Linux sh requires LF.
+$containerScript = $containerScript.Replace("`r`n", "`n")
+
 $toolchainImage | Set-Content -LiteralPath (Join-Path $evidencePath 'toolchain-image.txt')
 & docker run --rm --cpus 2 --memory 2g `
     --mount "type=bind,source=$repositoryPath,target=/workspace,readonly" `

@@ -1,6 +1,6 @@
 # Green AI — Monitoring Service
 
-Primer incremento funcional del Grupo A para PMV1: dominio y casos de uso Java puros, API MVC y fixtures deterministas. **No es el PMV1 completo**: faltan la integración real con Prometheus y las métricas de workloads del Grupo B, entre otros componentes del experimento integrado.
+Monitoring implementa el Grupo A para PMV1: dominio y casos de uso Java puros, API MVC, fixtures deterministas y adaptador HTTP de Prometheus. El cierre técnico incluye una prueba reproducible con Prometheus/Node Exporter reales en Docker. **No es el PMV1 completo**: faltan la validación del entorno del laboratorio y las métricas de workloads del Grupo B, entre otros componentes del experimento integrado.
 
 Spring Boot 4.1.1 · Java objetivo 21 · Maven Wrapper 3.9.16. Maven puede ejecutarse con Java 24 en el host; las pruebas de portabilidad usan Java 21 en contenedor. Sin adaptador Supabase, JPA/JDBC, Gateway, simulador, autenticación, Kubernetes ni Dockerfile.
 
@@ -13,7 +13,7 @@ En PowerShell, desde este repositorio:
 .\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=fixture' '-Dspring-boot.run.arguments=--server.address=127.0.0.1'
 ```
 
-El perfil **fixture debe activarse expresamente**. Sin él, el catálogo funciona y current/history responden 503 `METRICS_SOURCE_UNAVAILABLE`. No se cargan fixtures como fallback. El servicio no llama a Prometheus todavía.
+El perfil **fixture debe activarse expresamente** y tiene prioridad sobre la URL de Prometheus. Sin él, Monitoring usa Prometheus solo cuando `monitoring.prometheus.url` está configurado. Sin URL, el catálogo funciona y current/history responden 503 `METRICS_SOURCE_UNAVAILABLE`. No se cargan fixtures como fallback.
 
 ```powershell
 Invoke-RestMethod 'http://127.0.0.1:8080/api/v1/metrics/catalog'
@@ -42,7 +42,7 @@ adapter/in/web -> application/port/in <- application/MonitoringService
                                              |
                                   application/port/out/MetricsSource
                                              ^
-                   adapter/out/fixture o adapter/out/support (sin fuente)
+             adapter/out/fixture | adapter/out/prometheus | sin fuente
 ```
 
 `domain`: catálogo, consulta validada, series/calidad y fallos tipados; sin Spring ni Jackson. `application`: reloj inyectable, filtros, presupuesto y normalización de huecos; sin red. `configuration`: conecta beans/perfiles. El adaptador de soporte acota tiempo y concurrencia. Web valida sintaxis HTTP, limita serialización, añade request ID y traduce fallos a `application/problem+json`.
@@ -59,3 +59,42 @@ El script requiere Docker con motor Linux e Internet para Maven Central. Usa una
 OpenAPI es estático y no necesita springdoc. Única dependencia añadida: `com.networknt:json-schema-validator:3.0.7`, scope test, para comprobar respuestas contra JSON Schema 2020-12 del contrato. La [documentación oficial de NetworkNT](https://github.com/networknt/json-schema-validator) declara compatibilidad de la línea 3.x con Java 17+ y Jackson 3; el BOM Boot mantiene Jackson 3.1.5. No hay dependencia adicional en runtime.
 
 Resultados y pendientes: [validación del incremento](docs/validacion-incremento-1.md). Arquitectura general y decisiones: [propuesta PMV1](docs/propuesta-pmv1.md). Reglas vigentes: [AGENTS.md](AGENTS.md).
+
+## Configurar Prometheus
+
+Ejemplo local, si el operador ya dispone de Prometheus en ese puerto:
+
+```powershell
+$env:MONITORING_PROMETHEUS_URL = 'http://127.0.0.1:9090'
+$env:MONITORING_PROMETHEUS_DEFAULT_CLUSTER = 'lab-01'
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.arguments=--server.address=127.0.0.1'
+```
+
+En Kubernetes se configurará DNS interno, por ejemplo `http://prometheus.observability.svc.cluster.local:9090`, sujeto a nombres/namespaces reales. No usar localhost entre pods. No se desplegó Kubernetes en esta entrega.
+
+| Propiedad (`monitoring.prometheus.*`) | Valor por defecto | Uso |
+| --- | --- | --- |
+| `url` | Ausente | Activa Prometheus; HTTP(S), sin credenciales/query/fragmento; puede incluir prefijo de ruta |
+| `default-cluster` | `lab-01` | Clúster para series sin etiqueta; sobreescribible con `MONITORING_PROMETHEUS_DEFAULT_CLUSTER` |
+| `cluster-label` | `cluster` | Etiqueta de clúster; su valor real tiene prioridad sobre default-cluster |
+| `instance-label` | `instance` | Identidad exacta del nodo, incluyendo puerto; usar una etiqueta estable `node` si existe |
+| `origin-label` | `origin` | Procedencia: observed, simulated, estimated o unknown |
+| `default-origin` | `unknown` | Solo cambiar si el operador acredita la procedencia de todas las series sin etiqueta |
+
+Para un Prometheus de múltiples clústeres, cada serie debe tener etiqueta de clúster correcta. `external_labels` por sí sola no añade esa etiqueta a las consultas locales: usar labels o relabel_configs del scrape. El filtro por default-cluster incluye series sin etiqueta y series que lo declaran; otros filtros son exactos. Si ambas fuentes producen identidades duplicadas, la consulta da 502 y exige corregir el etiquetado, sin fusionarlas.
+
+No se elimina el puerto de instance. Si instance contiene caracteres fuera del contrato actual (por ejemplo IPv6 con corchetes), configurar una etiqueta de nodo estable y compatible. CPU agrupa por clúster, recurso y origen; red y almacenamiento preservan sus dimensiones. Filesystem usa size - free y requiere device_error=0; excluye los tipos/montajes documentados. Falta de métricas produce no_data, no cero ni fixture.
+
+HttpClient JDK 21, sin nuevas dependencias runtime. Consultas PromQL cerradas, `/api/v1/query` y `/api/v1/query_range`, sin redirecciones ni reintentos. Conexión 1 s, evaluación 3 s, plazo HTTP 3 s incluyendo cuerpo, presupuesto externo 5 s. Lectura limitada a 5 MiB, `limit=101` para detectar exceso de 100 series, `lookback_delta=30s`. La frecuencia de scrape debe permitir la ventana rate de 60 s; acordarla con el laboratorio. Mensajes internos del upstream se reemplazan por avisos/errores controlados.
+
+Las [decisiones consolidadas y el punto de integración del simulador](docs/integracion-simulator.md) registran la identidad, procedencia, métricas y reloj que espera Monitoring.
+
+## Cierre con Prometheus real
+
+```powershell
+.\scripts\Test-Prometheus.ps1
+```
+
+PowerShell 7 y Docker Linux. Recompila y ejecuta la suite con Java 21 en contenedor; después arranca el JAR, Prometheus 3.13.3 LTS y Node Exporter 1.12.1, todos fijados por digest, en una red temporal. El cliente de prueba también corre con Java 21 dentro de Docker. Verifica las cinco consultas current/history, filtros, scrape técnico y 503 al detener la fuente. No publica puertos, no monta la raíz del host, no usa Dockerfile ni clústeres/volúmenes existentes. El historial del test vive en tmpfs y solo se eliminan contenedores/red identificados como propios de esa ejecución.
+
+Evidencias en `target/prometheus-smoke/<run-id>/`. Las observaciones describen el Linux visible para Node Exporter dentro de Docker; no constituyen inventario ni mediciones de los equipos universitarios o del host Windows. Scrape de prueba 5 s; el periodo real se acordará en el laboratorio.

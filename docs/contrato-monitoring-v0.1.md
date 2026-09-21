@@ -1,6 +1,6 @@
 # Contrato Monitoring v0.1 — propuesta
 
-Dirección aprobada por el usuario; contrato interno provisional para revisión con Data Processing. Incremento autorizado: Grupo A, adaptador fixture explícito, sin Prometheus real. OpenAPI 3.1.0 estático en `src/main/resources/static/openapi/monitoring-v0.1.json`; no requiere biblioteca de generación ni dependencia adicional de Spring Boot. Referencia: https://spec.openapis.org/oas/v3.1.0.html.
+Dirección aprobada por el usuario; contrato interno provisional para revisión con Data Processing. Incrementos autorizados: Grupo A, adaptador fixture explícito y posteriormente adaptador Prometheus. OpenAPI 3.1.0 estático en `src/main/resources/static/openapi/monitoring-v0.1.json`; no requiere biblioteca de generación ni dependencia adicional de Spring Boot en runtime. Referencia: https://spec.openapis.org/oas/v3.1.0.html.
 
 ## Rutas
 
@@ -26,7 +26,7 @@ Scraping técnico: `/actuator/prometheus`. Salud: `/actuator/health/liveness` y 
 | `node.network.transmit` | bytes/s | `rate(node_network_transmit_bytes_total[1m])`, misma identidad por interfaz |
 | `node.filesystem.used` | bytes | `node_filesystem_size_bytes - node_filesystem_free_bytes` por nodo/filesystem. Medida absoluta, sin denominador porcentual; capacidad de referencia size del mismo device/mountpoint/fstype. Free incluye bloques reservados, por lo que no equivale a size - avail |
 
-Almacenamiento conserva `device`, `mountpoint`, `fstype`; nunca suma filesystems. Se admiten explícitamente fstype `ext2`, `ext3`, `ext4`, `xfs`, `btrfs`, `zfs`. Esta lista conservadora excluye tmpfs, devtmpfs, overlay, proc, sysfs, cgroup/cgroup2, squashfs y fuentes desconocidas/remotas. Otros tipos necesitan revisión; no se incorporan silenciosamente. Se descartan montajes `/proc`, `/sys`, `/dev`, `/run` y descendientes; errores de lectura del filesystem deben producir ausencia/advertencia, no cero. La regla será aplicada por el adaptador Prometheus futuro; los fixtures solo incluyen filesystems admisibles. Definiciones base: https://github.com/prometheus/node_exporter/blob/master/collector/filesystem_common.go.
+Almacenamiento conserva `device`, `mountpoint`, `fstype`; nunca suma filesystems. Se admiten explícitamente fstype `ext2`, `ext3`, `ext4`, `xfs`, `btrfs`, `zfs`. Esta lista conservadora excluye tmpfs, devtmpfs, overlay, proc, sysfs, cgroup/cgroup2, squashfs y fuentes desconocidas/remotas. Otros tipos necesitan revisión; no se incorporan silenciosamente. Se descartan montajes `/proc`, `/sys`, `/dev`, `/run` y descendientes mediante `/(proc|sys|dev|run)(/.*)?` (regex completamente anclada en Prometheus). Se exige node_filesystem_device_error=0; errores de lectura producen ausencia, no cero. Los fixtures solo incluyen filesystems admisibles. Definiciones base: https://github.com/prometheus/node_exporter/blob/master/collector/filesystem_common.go.
 
 ## Grupo B — pendiente dentro del PMV1 integrado
 
@@ -43,7 +43,9 @@ Node Exporter proporciona infraestructura del nodo. kube-state-metrics describe 
 
 Propuesta inicial centrada en nodos; pods/workloads requieren catálogo y denominadores propios en una revisión posterior. Node Exporter y mapeo de etiquetas son precondiciones por confirmar para el adaptador real. Una etiqueta `cluster` y un identificador estable de nodo deben incorporarse en la recolección/configuración; no inventarlos a partir de la IP del desarrollador. Series de red conservan `device`.
 
-No se ofrece potencia ni energía hasta validar una fuente, unidades y método. Fixtures representan las cinco métricas del Grupo A, siempre origin=simulated y source=fixture; no son inventario real ni un simulador. Perfil fixture explícito y reloj controlable en pruebas. Sin ese perfil el catálogo funciona, pero las consultas dan 503 hasta implementar una fuente real.
+No se ofrece potencia ni energía hasta validar una fuente, unidades y método. Fixtures representan las cinco métricas del Grupo A, siempre origin=simulated y source=fixture; no son inventario real ni un simulador. Perfil fixture explícito y reloj controlable en pruebas. Sin ese perfil se usa Prometheus si hay URL configurada; sin URL las consultas dan 503.
+
+Prometheus conserva `instance` completo por defecto como resourceId (puerto incluido); puede configurarse una etiqueta estable diferente. cluster-label por defecto cluster; cuando falta/vacío se aplica default-cluster=lab-01, sobreescribible. Origin proviene de origin-label=origin o default-origin=unknown, nunca se asume observed por usar Prometheus. CPU preserva esas tres etiquetas al agregar. El filtro por default-cluster incluye etiquetas ausentes; las identidades duplicadas se rechazan, no se fusionan. Configurar etiquetas en scrape/relabel, no depender de external_labels para consulta local.
 
 ## Tiempo, calidad y límites
 
@@ -55,7 +57,7 @@ No se ofrece potencia ni energía hasta validar una fuente, unidades y método. 
 - Sin ninguna serie, devolver 200, `series:[]`, `dataStatus:no_data`. Esto no demuestra que el recurso no exista; no hay inventario autoritativo.
 - `NaN`/infinito no se serializan como números JSON; se convierten a null con `quality:non_finite` y aviso. Conservar procedencia y advertencias.
 - En gauges, lookback propuesto 30 s; una evaluación puede reutilizar una muestra reciente. `timestamp` es instante de evaluación, no necesariamente de scrape. En tasas se exige información suficiente en la ventana de 60 s; no prometer detectar cada scrape perdido mediante una tasa.
-- Presupuesto de consulta al puerto de salida 5 s, sin reintentos automáticos. Tamaño de respuesta funcional máximo 5 MiB validado antes de escribir el cuerpo. Para el adaptador Prometheus futuro: conexión 1 s, evaluación upstream 3 s y cuerpo upstream 5 MiB limitado durante lectura; estos tres controles HTTP quedan pendientes porque no hay cliente upstream en este incremento.
+- Presupuesto de consulta al puerto de salida 5 s, sin reintentos automáticos. Tamaño de respuesta funcional máximo 5 MiB validado antes de escribir el cuerpo. Prometheus: conexión 1 s, evaluación upstream 3 s, plazo HTTP 3 s incluyendo cuerpo y máximo 5 MiB durante lectura; sin redirecciones. Error/timeout del upstream no produce no_data.
 - Al superar cardinalidad/puntos, rechazar con 422 sin truncar. Pedir hasta 101 series al backend permite detectar exceso frente al máximo 100; verificar también el presupuesto total al procesar.
 
 El adaptador utilizará consultas instantáneas y de rango del [API oficial de Prometheus](https://prometheus.io/docs/prometheus/latest/querying/api/), y convertirá los resultados vector/matrix al contrato propio. Validará la respuesta y preservará sus advertencias. El catálogo y los filtros serán las únicas entradas para construir consultas.
@@ -113,5 +115,5 @@ No devolver 200 con lista vacía cuando falla Prometheus. Generar `X-Request-Id`
 3. Cero, hueco, ausencia total, valores no finitos y advertencias producen resultados distintos.
 4. Límites inclusivos de intervalo, reloj fijo UTC, paso no divisor del rango y presupuesto de puntos.
 5. Timeout, conexión rechazada, error upstream y JSON inválido producen errores contractuales distintos.
-6. HTTP y contrato estático verificados con fixture y sin perfil fixture. Pruebas del adaptador Prometheus quedan pendientes, no se implementa ahora.
+6. HTTP y contrato estático con fixture, sin fuente y adaptador Prometheus contra servidor HTTP de prueba. Las cinco consultas también se ejecutaron con Prometheus/Node Exporter reales en Docker; el smoke completo y el entorno universitario tienen pendientes documentados en `validacion-incremento-1.md`.
 7. `verify` y pruebas HTTP con Java 21 dentro de un contenedor de herramientas, sin Dockerfile. Imagen final y smoke de esa imagen quedan pendientes del incremento de empaquetado.

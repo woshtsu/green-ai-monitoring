@@ -30,8 +30,10 @@ public final class OpenApiAssertions {
         assertThat(response.headers().firstValue("Content-Type").orElseThrow()).startsWith(media);
         JsonNode schema = SPEC.get("paths").get(path).get("get").get("responses")
             .get(Integer.toString(expectedStatus)).get("content").get(media).get("schema");
-        ObjectNode root = (ObjectNode) schema.deepCopy();
-        root.set("components", SPEC.get("components"));
+        // Embed the exact OpenAPI schemas as JSON Schema $defs, preserving internal references.
+        ObjectNode root = (ObjectNode) MAPPER.readTree(schema.toString().replace("#/components/schemas/", "#/$defs/"));
+        root.set("$defs", MAPPER.readTree(SPEC.get("components").get("schemas").toString()
+            .replace("#/components/schemas/", "#/$defs/")));
         var registry = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12);
         var validator = registry.getSchema(root.toString(), InputFormat.JSON);
         assertThat(validator.validate(response.body(), InputFormat.JSON,

@@ -41,6 +41,7 @@ public final class MonitoringService implements QueryMetrics {
 
     private Response execute(MetricQuery query) {
         SourceResult raw = source.query(query);
+        if (raw == null) throw invalidSource();
         if (raw.series().size() > MetricQuery.MAX_SERIES
             || (long) raw.series().size() * query.pointsPerSeries() > MetricQuery.MAX_POINTS) {
             throw MonitoringFailure.limit("La consulta supera el máximo de series o puntos.");

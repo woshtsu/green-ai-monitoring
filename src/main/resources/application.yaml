@@ -1,6 +1,14 @@
 spring:
   application:
     name: monitoring-service
+monitoring:
+  prometheus:
+    # URL intentionally absent; configure MONITORING_PROMETHEUS_URL to enable the real adapter.
+    default-cluster: lab-01
+    cluster-label: cluster
+    instance-label: instance
+    origin-label: origin
+    default-origin: unknown
 management:
   endpoints:
     web:

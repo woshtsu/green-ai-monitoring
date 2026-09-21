@@ -47,5 +47,11 @@ public final class BoundedMetricsSource implements MetricsSource, AutoCloseable 
         }
     }
 
-    @Override public void close() { executor.shutdownNow(); }
+    @Override public void close() {
+        executor.shutdownNow();
+        if (delegate instanceof AutoCloseable closeable) {
+            try { closeable.close(); }
+            catch (Exception exception) { throw new IllegalStateException("Could not close metrics source", exception); }
+        }
+    }
 }

@@ -1,6 +1,6 @@
 # Monitoring PMV1: inspección y propuesta
 
-Fecha: 2026-09-21. Estado: dirección aprobada con aclaraciones del usuario. Autorizado únicamente el incremento funcional del Grupo A con adaptador fixture. El contrato sigue sujeto a revisión de integración con Data Processing.
+Fecha: 2026-09-21. Estado: dirección aprobada con aclaraciones del usuario. Autorizados el incremento funcional del Grupo A y posteriormente el adaptador Prometheus según el plan revisado. El contrato sigue sujeto a revisión de integración con Data Processing.
 
 ## Inspección del punto de partida
 
@@ -38,7 +38,7 @@ La condición documental «sin pérdida» debe medirse, no lograrse rellenando h
 
 1. **Contrato y reglas (aprobado):** incorporar aclaraciones y activar `AGENTS.md` en la raíz como única versión normativa.
 2. **Núcleo y adaptador de prueba (autorizado):** dominio Java puro, casos de uso, puertos de entrada/salida y fixture determinista con perfil explícito. Implementar Grupo A: CPU, memoria, red y almacenamiento por filesystem. Reloj inyectable, API MVC, límites, errores, OpenAPI estático y pruebas unitarias, HTTP y de contrato.
-3. **Adaptador Prometheus (posterior, no autorizado ahora):** consultas controladas, límites de lectura y timeout HTTP. No habrá conexión real a Prometheus en el incremento actual ni recuperación silenciosa con fixtures.
+3. **Adaptador Prometheus (autorizado por mensaje posterior):** consultas controladas, límites de lectura y timeout HTTP. URL explícita, default-cluster configurable, origen unknown salvo etiqueta/configuración confiable, sin recuperación silenciosa con fixtures. Las decisiones consolidadas y el siguiente punto de integración están en `integracion-simulator.md`.
 4. **Empaquetado (posterior):** no crear Dockerfile hasta terminar y validar el incremento funcional. Luego JDK 21 para compilar, JRE 21 para ejecutar e imágenes fijadas por digest. Mientras tanto pueden ejecutarse pruebas con JDK 21 en un contenedor efímero, sin Dockerfile ni imagen de aplicación.
 
 El Grupo B (solicitudes, throughput, concurrencia, latencia, errores disponibles, pods, réplicas y estado de workloads) pertenece al PMV1 integrado y depende de instrumentación. El incremento de Grupo A no completa PMV1. No declarar cierre mientras falten almacenamiento o métricas de workloads requeridas.
