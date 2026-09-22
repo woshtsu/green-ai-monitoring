@@ -2,7 +2,7 @@
 
 Monitoring implementa el Grupo A para PMV1: dominio y casos de uso Java puros, API MVC, fixtures deterministas y adaptador HTTP de Prometheus. El cierre técnico incluye una prueba reproducible con Prometheus/Node Exporter reales en Docker. **No es el PMV1 completo**: faltan la validación del entorno del laboratorio y las métricas de workloads del Grupo B, entre otros componentes del experimento integrado.
 
-Spring Boot 4.1.1 · Java objetivo 21 · Maven Wrapper 3.9.16. Maven puede ejecutarse con Java 24 en el host; las pruebas de portabilidad usan Java 21 en contenedor. Sin adaptador Supabase, JPA/JDBC, Gateway, simulador, autenticación, Kubernetes ni Dockerfile.
+Spring Boot 4.1.1 · Java objetivo 21 · Maven Wrapper 3.9.16. Maven puede ejecutarse con Java 24 en el host; la aplicación se compila y ejecuta con Java 21 en Docker. Monitoring no incorpora adaptadores Supabase, JPA/JDBC, autenticación o Kubernetes.
 
 ## Ejecutar
 
@@ -31,7 +31,31 @@ El ejemplo histórico debe estar en el pasado respecto al reloj de ejecución. F
 - OpenAPI estático: `GET /openapi/monitoring-v0.1.json`; fuente versionada en [monitoring-v0.1.json](src/main/resources/static/openapi/monitoring-v0.1.json).
 - Scraping técnico: `/actuator/prometheus`; salud del proceso: `/actuator/health/liveness` y `/actuator/health/readiness`. La salud de ciclo de vida no certifica disponibilidad de datos; en modo sin fuente las consultas dan 503.
 
-Rutas internas; el futuro Gateway expondrá otro prefijo. Frontend solo usa Gateway; Data Processing puede consultar directamente Monitoring. No hay llamadas desde Monitoring a esos componentes ni a Supabase.
+Estas son rutas internas. El Gateway publica las mismas operaciones bajo `/api/monitoring/v1/metrics/*` y reescribe el prefijo; el Frontend nunca utiliza estas rutas internas. Data Processing sí consulta directamente Monitoring mediante DNS interno, porque sus pipelines no deben volver a entrar por el Gateway. Monitoring no llama a Gateway, Data Processing, Prediction o Supabase.
+
+## Uso desde otros servicios
+
+Monitoring proporciona JSON, no DataFrames ni textos de presentación. Conserva unidades, timestamps UTC, identidades, procedencia y calidad. Cada consumidor decide su transformación sin alterar el significado original:
+
+| Consumidor | URL | Responsabilidad |
+| --- | --- | --- |
+| Frontend | Gateway `/api/monitoring/v1/metrics/*` | Visualización y formato humano |
+| Data Processing | Monitoring `/api/v1/metrics/*` | Limpieza, alineación, agregación y features |
+| Gateway | Monitoring `/api/v1/metrics/*` | Proxy y reescritura, sin análisis |
+
+Data Processing debe tratar `value:null` según `quality=missing|non_finite`; nunca convertirlo automáticamente en cero. Debe preservar `origin`, distinguir `no_data` de errores upstream y no mezclar series de red/filesystem sin una política documentada. Para rangos mayores de 24 horas dividirá las consultas respetando que los extremos son inclusivos. El cliente no envía PromQL ni filtros arbitrarios.
+
+Petición desde la red interna:
+
+```http
+GET http://monitoring:8080/api/v1/metrics/history?metric=node.cpu.utilization&resourceType=node&cluster=sim-run-123&resourceId=node-01&start=2026-09-21T15:00:00Z&end=2026-09-21T16:00:00Z&stepSeconds=15
+```
+
+Petición equivalente del Frontend mediante Gateway:
+
+```http
+GET http://gateway:8081/api/monitoring/v1/metrics/history?metric=node.cpu.utilization&resourceType=node&cluster=sim-run-123&resourceId=node-01&start=2026-09-21T15:00:00Z&end=2026-09-21T16:00:00Z&stepSeconds=15
+```
 
 Reglas y límites completos: [contrato v0.1](docs/contrato-monitoring-v0.1.md). Rechazo de parámetros desconocidos/repetidos, sin PromQL del cliente. UTC, múltiples series, cero distinto de null, problemas JSON y X-Request-Id generado por solicitud. Máximo 24 h, 100 series, 10 000 puntos incluyendo huecos, respuesta 5 MiB, consulta de fuente 5 s. Máximo 16 consultas simultáneas a la fuente, sin cola ni reintentos; saturación da 503. No hay autenticación ni CORS abierto; uso en desarrollo autorizado.
 
@@ -98,3 +122,14 @@ Las [decisiones consolidadas y el punto de integración del simulador](docs/inte
 PowerShell 7 y Docker Linux. Recompila y ejecuta la suite con Java 21 en contenedor; después arranca el JAR, Prometheus 3.13.3 LTS y Node Exporter 1.12.1, todos fijados por digest, en una red temporal. El cliente de prueba también corre con Java 21 dentro de Docker. Verifica las cinco consultas current/history, filtros, scrape técnico y 503 al detener la fuente. No publica puertos, no monta la raíz del host, no usa Dockerfile ni clústeres/volúmenes existentes. El historial del test vive en tmpfs y solo se eliminan contenedores/red identificados como propios de esa ejecución.
 
 Evidencias en `target/prometheus-smoke/<run-id>/`. Las observaciones describen el Linux visible para Node Exporter dentro de Docker; no constituyen inventario ni mediciones de los equipos universitarios o del host Windows. Scrape de prueba 5 s; el periodo real se acordará en el laboratorio.
+
+## Imagen de aplicación
+
+El Dockerfile compila y ejecuta con Java 21, sin depender del JDK ni de un JAR precompilado del host. La etapa final utiliza un usuario sin privilegios:
+
+```powershell
+docker build -t green-ai-monitoring .
+docker run --rm -p 8080:8080 -e MONITORING_PROMETHEUS_URL=http://host.docker.internal:9090 green-ai-monitoring
+```
+
+En Docker Compose debe usarse el nombre del servicio Prometheus en lugar de `host.docker.internal`.

@@ -1,11 +1,11 @@
 # Reglas de green-ai-monitoring
 
-- Trabajar únicamente en este repositorio. No crear Git padre, modificar proyectos hermanos, publicar ni hacer push.
+- Trabajar únicamente en este repositorio y no crear Git padre ni modificar proyectos hermanos. Publicar o hacer push solo por solicitud explícita del usuario.
 - Conservar Java objetivo 21, Spring Boot 4.1.1 y Maven Wrapper fijado. Sin APIs posteriores a Java 21 o preview. Compilar/ejecutar Docker con Java 21 cuando se autorice empaquetado.
 - Dominio y aplicación Java puros; puertos de entrada/salida; adaptadores y configuración separados. No depender de Spring/HTTP/Prometheus desde el núcleo.
-- Alcance actual: Grupo A completo, fixture explícito, MVC, validaciones, errores, pruebas y OpenAPI. El usuario autorizó después el adaptador real Prometheus y un clúster por defecto configurable. Sin Dockerfile, Kubernetes, autenticación o servicios adicionales en este incremento.
+- Alcance actual: Grupo A completo, fixture explícito, MVC, validaciones, errores, OpenAPI, adaptador Prometheus y Dockerfile Java 21. Sin Kubernetes, autenticación o servicios adicionales en este incremento.
 - Gateway atiende tráfico externo; microservicios pueden comunicarse directamente por REST/DNS Kubernetes. Frontend solo usa Gateway, nunca microservicios o Supabase directamente.
-- Rutas internas Monitoring `/api/v1/metrics/*`; rutas externas futuras Gateway `/api/monitoring/v1/metrics/*`. Monitoring no compensa la reescritura ni llama a Gateway, Data Processing o Prediction.
+- Rutas internas Monitoring `/api/v1/metrics/*`; Gateway publica `/api/monitoring/v1/metrics/*`. Monitoring no compensa la reescritura ni llama a Gateway, Data Processing o Prediction.
 - Monitoring consulta Prometheus externo solo con URL explícita. Prometheus recolecta `/actuator/prometheus`; JVM/HTTP/proceso describen Monitoring, no el centro de datos. Origin desconocido sigue unknown salvo etiqueta/configuración confiable; preservar instance completo por defecto y clúster en agregaciones.
 - Monitoring no usa Supabase: sin adaptadores, JPA, JDBC o credenciales. Gateway tampoco usa SQL/Supabase. No utilizar ni probar credenciales filtradas; rotación se gestiona aparte.
 - Datos reales hardware/logs son observed con procedencia de medición pendiente. Respetar propiedad de tablas y mínimos permisos; no mezclar simulación con logs reales.
