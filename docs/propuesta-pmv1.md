@@ -76,13 +76,7 @@ Frontend no accede directamente a microservicios ni Supabase. Gateway no ejecuta
 
 Monitoring consulta el API HTTP de Prometheus; Prometheus recolecta las métricas técnicas de Monitoring en `/actuator/prometheus`. Son interacciones distintas. JVM/HTTP/proceso Java describen Monitoring, no el centro de datos.
 
-Existe Supabase/PostgreSQL real. Los nombres inferidos del prototipo son:
-
-- `usuario`: usuario_id, nombre_completo, email, password, password_hash, rol, fecha_creacion.
-- `hardware`: hardware_id, hostname, ip_address, cpu_cores, ram_gb, max_watts, estado, usuario_id.
-- `logs`: hardware_id, timestamp, cpu_utilization_pct, ram_utilization_pct, temperatura_celsius, energia_watts.
-
-DDL, tipos, claves, restricciones e índices están pendientes de confirmación; no se infieren migraciones. `hardware` y `logs` contienen datos reales, tratados como observed aunque su procedimiento/procedencia aún deben documentarse. El nombre `energia_watts` requiere aclaración: watts es potencia, no energía.
+El diagrama recibido el 2026-09-22 confirma los nombres, tipos y relaciones visibles de las tablas `usuario`, `hardware` y `logs`. El [modelo de BD](modelo-bd.md) contiene la transcripción completa y su correspondencia con Monitoring y Simulator. Sustituye la enumeración inferida del prototipo. La extracción SQL del usuario confirma tipos y nulabilidad; la extracción completa confirma defaults, longitudes/precisión, restricciones, índices y RLS; verificación documental del esquema cerrada. `energia_watts` representa potencia por su unidad y `prediccion_watts` es estimada, aunque comparta fila con observaciones.
 
 Monitoring y Gateway no acceden a Supabase. Simulator podrá leer hardware; Data Processing podrá leer logs; Prediction recibe datos preparados y solo tendrá tablas propias si se acuerdan. Usuario queda fuera de este incremento. Cada servicio tendrá permisos mínimos por datos, incluso compartiendo instancia física. No añadir JPA/JDBC ni credenciales. Las credenciales publicadas están comprometidas: no se usan ni se prueban; rotación y limpieza se gestionan aparte.
 

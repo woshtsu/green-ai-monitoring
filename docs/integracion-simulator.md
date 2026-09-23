@@ -6,7 +6,7 @@ Monitoring Grupo A queda como consumidor de Prometheus; el simulador será un se
 
 Simulator/exporter → scrape de Prometheus → API interna de Monitoring → Data Processing o Gateway.
 
-El simulador no inserta métricas en Monitoring ni escribe en logs reales de Supabase. Monitoring no llama al simulador ni a Supabase. El futuro adaptador de inventario podrá leer hardware con permisos mínimos cuando existan DDL y credenciales rotadas; hasta entonces usar un inventario fixture explícito. Que hardware sea observado no convierte los resultados simulados en observados.
+El simulador no inserta métricas en Monitoring ni escribe en logs reales de Supabase. Monitoring no llama al simulador ni a Supabase. El futuro adaptador de inventario podrá leer hardware con permisos mínimos cuando se implemente el adaptador y existan permisos mínimos y credenciales rotadas; hasta entonces usar un inventario fixture explícito. Que hardware sea observado no convierte los resultados simulados en observados.
 
 ## Identidad y procedencia
 
@@ -51,3 +51,7 @@ Carga real, lectura Supabase y acciones Kubernetes se incorporarán mediante ada
 ## Decisiones consolidadas del adaptador Prometheus
 
 Se conservó HttpClient JDK 21 sin dependencias runtime nuevas. Se corrigió el plan inicial: no recortar puerto de instance, origin unknown por defecto, agrupar CPU por clúster/recurso/origen, excluir únicamente los árboles de montajes indicados y aplicar deadline también al cuerpo HTTP. URL explícita, sin redirecciones/reintentos, default-cluster configurable, sin recuperación ficticia ante errores.
+
+## Referencia de BD actualizada — 2026-09-22
+
+Consultar el [modelo de BD](modelo-bd.md): diagrama y campos completos de `usuario`, `hardware` y `logs`, con mapeos y limitaciones de integración. El diagrama aporta tipos y relaciones; la extracción SQL del usuario confirma tipos y nulabilidad. La extracción completa confirma defaults, longitudes/precisión, restricciones, índices y RLS; verificación documental del esquema cerrada. Monitoring conserva Prometheus como fuente y Simulator conserva JSON/JSONL como persistencia; el acceso a inventario SQL es futuro. Esta referencia actualiza las suposiciones del esquema, sin ampliar el catálogo de métricas ni implementar acceso a BD.

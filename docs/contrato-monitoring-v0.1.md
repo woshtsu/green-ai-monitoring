@@ -117,3 +117,7 @@ No devolver 200 con lista vacía cuando falla Prometheus. Generar `X-Request-Id`
 5. Timeout, conexión rechazada, error upstream y JSON inválido producen errores contractuales distintos.
 6. HTTP y contrato estático con fixture, sin fuente y adaptador Prometheus contra servidor HTTP de prueba. Las cinco consultas también se ejecutaron con Prometheus/Node Exporter reales en Docker; el smoke completo y el entorno universitario tienen pendientes documentados en `validacion-incremento-1.md`.
 7. `verify` y pruebas HTTP con Java 21 dentro de un contenedor de herramientas, sin Dockerfile. Imagen final y smoke de esa imagen quedan pendientes del incremento de empaquetado.
+
+## Referencia de BD actualizada — 2026-09-22
+
+Consultar el [modelo de BD](modelo-bd.md): diagrama y campos completos de `usuario`, `hardware` y `logs`, con mapeos y limitaciones de integración. El diagrama aporta tipos y relaciones; la extracción SQL del usuario confirma tipos y nulabilidad. La extracción completa confirma defaults, longitudes/precisión, restricciones, índices y RLS; verificación documental del esquema cerrada. Monitoring conserva Prometheus como fuente y Simulator conserva JSON/JSONL como persistencia; el acceso a inventario SQL es futuro. Esta referencia actualiza las suposiciones del esquema, sin ampliar el catálogo de métricas ni implementar acceso a BD.

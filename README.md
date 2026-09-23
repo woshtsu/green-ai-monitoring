@@ -133,3 +133,7 @@ docker run --rm -p 8080:8080 -e MONITORING_PROMETHEUS_URL=http://host.docker.int
 ```
 
 En Docker Compose debe usarse el nombre del servicio Prometheus en lugar de `host.docker.internal`.
+
+## Modelo de base de datos
+
+El [modelo de BD](docs/modelo-bd.md) incluye el diagrama recibido el 2026-09-22, las tres tablas completas y las correspondencias de identidad, unidades y procedencia. Documenta los límites actuales y los requisitos del futuro adaptador de inventario.
