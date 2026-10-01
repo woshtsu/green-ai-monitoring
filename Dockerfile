@@ -3,7 +3,7 @@ WORKDIR /workspace
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
 COPY src src
-RUN chmod +x mvnw && ./mvnw -B -ntp package -DskipTests
+RUN chmod +x mvnw && ./mvnw -B -ntp verify
 
 FROM eclipse-temurin:21-jre-jammy
 RUN useradd --system --uid 10001 --create-home monitoring
